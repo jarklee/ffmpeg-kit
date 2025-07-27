@@ -150,23 +150,34 @@ if [[ -z ${BUILD_VERSION} ]]; then
   exit 1
 fi
 
+function is_disabled_library() {
+  for disabled_library in "${disabled_libraries[@]}"; do
+    if [[ ${disabled_library} == "$1" ]]; then
+      echo 1
+      return
+    fi
+  done
+  echo 0
+}
+
 # PROCESS FULL OPTION AS LAST OPTION
 if [[ -n ${BUILD_FULL} ]]; then
   for library in {0..61}; do
+    library_name=$(get_library_name ${library})
+    if [[ $(is_disabled_library $library_name) -eq 1 ]]; then
+      echo -e "Library ${library_name} is disabled. Skipping."
+      continue
+    fi
+
     if [ ${GPL_ENABLED} == "yes" ]; then
-      enable_library "$(get_library_name $library)" 1
+      enable_library "$library_name" 1
     else
       if [[ $(is_gpl_licensed $library) -eq 1 ]]; then
-        enable_library "$(get_library_name $library)" 1
+        enable_library "$library_name" 1
       fi
     fi
   done
 fi
-
-# DISABLE SPECIFIED LIBRARIES
-for disabled_library in ${disabled_libraries[@]}; do
-  set_library "${disabled_library}" 0
-done
 
 # IF HELP DISPLAYED EXIT
 if [[ -n ${DISPLAY_HELP} ]]; then
